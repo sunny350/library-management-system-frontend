@@ -11,8 +11,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderSidebar = () => {
         const sidebarItems = {
             LIBRARIAN: [
-                { text: 'Books', link: 'books.html' },
-                { text: 'Users', link: 'users.html' },
+                { text: 'Books', link: 'books.html', icon: 'fas fa-book' },
+                { text: 'Users', link: 'users.html', icon: 'fas fa-users' },
+            ],
+            MEMBER: [
+                { text: 'Books', link: 'books.html', icon: 'fas fa-book' },
+                { text: 'My Borrows', link: 'my-borrows.html', icon: 'fas fa-bookmark' },
             ]
         };
 
@@ -22,12 +26,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (role && sidebarItems[role]) {
             sidebarItems[role].forEach(item => {
                 const li = document.createElement('li');
-                li.innerHTML = `<a href="${item.link}">${item.text}</a>`;
+                li.classList.add('nav-item');
+                const isActive = window.location.href.includes(item.link);
+                li.innerHTML = `
+                    <a class="nav-link ${isActive ? 'active' : ''}" href="${item.link}">
+                        <i class="${item.icon}"></i>
+                        ${item.text}
+                    </a>
+                `;
                 sidebar.appendChild(li);
             });
         }
     };
-
     const renderUserContent = async () => {
         const userContent = document.getElementById('userContent');
         
@@ -61,17 +71,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Delete user
             document.querySelectorAll('.delete-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    const userId = e.target.getAttribute('data-id');
-                    const deleteResponse = await fetch(`${BACKEND_API}/api/users/${userId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
+                    if (confirm('Are you sure you want to delete this user?')) {
+                        try {
+                            const userId = e.target.getAttribute('data-id');
+                            const deleteResponse = await fetch(`${BACKEND_API}/api/users/${userId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+        
+                            if (deleteResponse.ok) {
+                                e.target.parentElement.remove(); // Remove user from list
+                            }                          
+                        } catch (error) {
+                            alert('unable to delete user.')
+                            console.log(`unable to delete user ${error.message}`)
                         }
-                    });
-
-                    if (deleteResponse.ok) {
-                        e.target.parentElement.remove(); // Remove user from list
                     }
                 });
             });
