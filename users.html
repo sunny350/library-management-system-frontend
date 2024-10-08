@@ -43,6 +43,10 @@
                                 <option value="LIBRARIAN">Librarian</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label for="newUserPassword">Password</label>
+                            <input type="password" class="form-control" id="newUserPassword" placeholder="Enter your password">
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -65,7 +69,7 @@
                     <form id="editUserForm">
                         <div class="form-group">
                             <label for="editUserName">Name</label>
-                            <input type="text" class="form-control" id="editUserName">
+                            <input type="text" class="form-control" id="editUserName" readonly>
                         </div>
                         <div class="form-group">
                             <label for="editUserRole">Role</label>
@@ -73,6 +77,15 @@
                                 <option value="MEMBER">Member</option>
                                 <option value="LIBRARIAN">Librarian</option>
                             </select>
+                        </div>
+                        <hr>
+                        <div class="form-group">
+                            <label for="editUserCurrentPassword">Current Password</label>
+                            <input type="password" class="form-control" id="editUserCurrentPassword" placeholder="Enter current password to change">
+                        </div>
+                        <div class="form-group">
+                            <label for="editUserNewPassword">New Password</label>
+                            <input type="password" class="form-control" id="editUserNewPassword" placeholder="Enter new password">
                         </div>
                     </form>
                 </div>

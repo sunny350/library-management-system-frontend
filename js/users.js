@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const userItem = document.createElement('div');
                 userItem.classList.add('user-item', 'mb-3', 'p-3', 'border', 'rounded');
                 userItem.innerHTML = `
-                    <h5>${user.name}</h5>
+                    <h5>${user.username}</h5>
                     <p>Role: ${user.role}</p>
                     <button class="btn btn-danger delete-btn" data-id="${user._id}">Delete</button>
                     <button class="btn btn-info edit-btn" data-id="${user._id}">Edit</button>
@@ -94,9 +94,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         let user = await response.json();
                         user = user.data;
 
-                        // Pre-fill modal with user data
-                        document.getElementById('editUserName').value = user.name;
+                        document.getElementById('editUserName').value = user.username;
                         document.getElementById('editUserRole').value = user.role;
+                        document.getElementById('editUserCurrentPassword').value = ''; 
+                        document.getElementById('editUserNewPassword').value = ''; 
 
                         // Show edit modal
                         $('#editUserModal').modal('show');
@@ -105,6 +106,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                         document.getElementById('saveUserChanges').addEventListener('click', async () => {
                             const updatedName = document.getElementById('editUserName').value;
                             const updatedRole = document.getElementById('editUserRole').value;
+                            const currentPassword = document.getElementById('editUserCurrentPassword').value;
+                            const newPassword = document.getElementById('editUserNewPassword').value;
+
+                            const updatePayload = {
+                                username: updatedName,
+                                role: updatedRole
+                            };
+            
+                            // Include current and new passwords only if they are provided
+                            if (currentPassword && newPassword) {
+                                updatePayload.currentPassword = currentPassword;
+                                updatePayload.newPassword = newPassword;
+                            }
 
                             const updateResponse = await fetch(`${BACKEND_API}/api/users/${userId}`, {
                                 method: 'PUT',
@@ -112,10 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     'Authorization': `Bearer ${token}`,
                                     'Content-Type': 'application/json'
                                 },
-                                body: JSON.stringify({
-                                    name: updatedName,
-                                    role: updatedRole
-                                })
+                                body: JSON.stringify(updatePayload)
                             });
 
                             if (updateResponse.ok) {
@@ -144,6 +155,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('saveNewUser').addEventListener('click', async () => {
         const newUserName = document.getElementById('newUserName').value;
         const newUserRole = document.getElementById('newUserRole').value;
+        const newUserPassword = document.getElementById('newUserPassword').value;
+
 
         const response = await fetch(`${BACKEND_API}/api/users`, {
             method: 'POST',
@@ -152,8 +165,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                name: newUserName,
-                role: newUserRole
+                username: newUserName,
+                role: newUserRole,
+                password: newUserPassword
             })
         });
 
