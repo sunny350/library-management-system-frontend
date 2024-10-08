@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const BACKEND_API = 'http://localhost:5000';
+    const BACKEND_API = 'https://755e-27-96-89-255.ngrok-free.app';
     const role = localStorage.getItem('role');
     const token = localStorage.getItem('token');
 
