@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // const BACKEND_API = 'https://library-management-system-infm.onrender.com';
-    const BACKEND_API = 'http://localhost:5000';
+    const BACKEND_API = 'https://library-management-system-infm.onrender.com';
+    // const BACKEND_API = 'http://localhost:5000';
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
 
