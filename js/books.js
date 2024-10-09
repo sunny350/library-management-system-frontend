@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const BACKEND_API = 'https://library-management-system-infm.onrender.com';
-    // const BACKEND_API = 'http://localhost:5000';
+    // const BACKEND_API = 'https://library-management-system-infm.onrender.com';
+    const BACKEND_API = 'http://localhost:5000';
     const role = localStorage.getItem('role');
     const token = localStorage.getItem('token');
     
@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             MEMBER: [
                 { text: 'Books', link: 'books.html', icon: 'fas fa-book' },
                 { text: 'My Borrows', link: 'my-borrows.html', icon: 'fas fa-bookmark' },
+                { text: 'History of Books', link: 'book-history.html', icon: 'fas fa-history' }
             ],
             LIBRARIAN: [
                 { text: 'Books', link: 'books.html', icon: 'fas fa-book' },
@@ -55,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderBookContent = async () => {
         const bookContent = document.getElementById('bookContent');
         const addBookBtn = document.getElementById('addBookBtn');
-
+    
         try {
             const response = await fetch(`${BACKEND_API}/api/books`, {
                 method: 'GET',
@@ -64,41 +65,37 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Content-Type': 'application/json'
                 }
             });
-            
-            
+    
             handleApiResponse(response);
-
+    
             if (!response.ok) {
-                const errorData = await response.json(); 
+                const errorData = await response.json();
                 alert(`Error: ${errorData.error}`);
-                return 
+                return;
             }
-            let books =  await response.json();
-
-            books = books.data
-
-
+            let books = await response.json();
+    
+            books = books.data;
+    
             bookContent.innerHTML = `
                 <h4>Available Books</h4>
                 <div id="bookList" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"></div>
             `;
             const bookList = document.getElementById('bookList');
-
+    
             books.forEach(book => {
                 const bookItem = document.createElement('div');
                 bookItem.classList.add('col');
+                const isAvailable = book.status === "AVAILABLE";
                 bookItem.innerHTML = `
                     <div class="card h-100">
                         <div class="card-body">
                             <h5 class="card-title">${book.title}</h5>
                             <h6 class="card-subtitle mb-2 text-muted">by ${book.author}</h6>
-                            <p class="card-text">Status: ${book.status === "AVAILABLE" ? '<span class="badge bg-success">Available</span>' : '<span class="badge bg-danger">Not Available</span>'}</p>
+                            <p class="card-text">Status: ${isAvailable ? '<span class="badge bg-success">Available</span>' : '<span class="badge bg-danger">Not Available</span>'}</p>
                             ${role === 'MEMBER' ? `
-                                <button class="btn btn-primary borrow-btn" data-id="${book._id}">
+                                <button class="btn ${isAvailable ? 'btn-primary' : 'btn-secondary disabled'} borrow-btn" data-id="${book._id}" ${isAvailable ? '' : 'disabled'}>
                                     <i class="fas fa-hand-holding"></i> Borrow
-                                </button>
-                                <button class="btn btn-secondary return-btn" data-id="${book._id}" style="display:none;">
-                                    <i class="fas fa-undo"></i> Return
                                 </button>
                                 <div class="borrowed-status mt-2" style="display:none;">You have borrowed this book.</div>
                             ` : `
@@ -114,31 +111,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
                 bookList.appendChild(bookItem);
             });
-
+    
             // Add event listeners for borrow, return, delete, and edit buttons
             if (role === 'MEMBER') {
                 document.querySelectorAll('.borrow-btn').forEach(button => {
                     button.addEventListener('click', handleBorrow);
                 });
-
-                document.querySelectorAll('.return-btn').forEach(button => {
-                    button.addEventListener('click', handleReturn);
-                });
+    
             } else if (role === 'LIBRARIAN') {
                 addBookBtn.style.display = 'block';
-
+    
                 document.querySelectorAll('.delete-btn').forEach(button => {
                     button.addEventListener('click', handleDelete);
                 });
-
+    
                 document.querySelectorAll('.edit-btn').forEach(button => {
                     button.addEventListener('click', handleEdit);
                 });
-
+    
                 document.getElementById('addBookBtn').addEventListener('click', () => {
                     $('#addBookModal').modal('show');
                 });
-
+    
                 document.getElementById('saveNewBook').addEventListener('click', handleAddBook);
             }
         } catch (error) {
@@ -148,9 +142,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     };
+    
 
     const handleBorrow = async (e) => {
-        const bookId = e.target.getAttribute('data-id');
+        const borrowButton = e.target;
+        const bookId = borrowButton.getAttribute('data-id');
+        const bookStatusBadge = borrowButton.closest('.card-body').querySelector('.card-text .badge');
+
+    
+        // Disable the button immediately and change its class
+        borrowButton.disabled = true;
+        borrowButton.classList.remove('btn-primary');
+        borrowButton.classList.add('btn-secondary');
+    
         try {
             const borrowResponse = await fetch(`${BACKEND_API}/api/borrow/${bookId}`, {
                 method: 'POST',
@@ -159,27 +163,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Content-Type': 'application/json'
                 }
             });
-
+    
             handleApiResponse(borrowResponse);
-            if (!returnResponse.ok) {
-                const errorData = await borrowResponse.json(); 
+    
+            if (!borrowResponse.ok) {
+                const errorData = await borrowResponse.json();
                 alert(`Error: ${errorData.error}`);
-                return 
+                // Revert the button if an error occurs
+                borrowButton.disabled = false;
+                borrowButton.classList.remove('btn-secondary');
+                borrowButton.classList.add('btn-primary');
+                borrowButton.innerHTML = '<i class="fas fa-hand-holding"></i> Borrow';
+                return;
             }
 
-            e.target.style.display = 'none';
-            const returnButton = e.target.nextElementSibling;
-            returnButton.style.display = 'inline-block';
-            const borrowedStatus = e.target.parentElement.querySelector('.borrowed-status');
-            borrowedStatus.style.display = 'block';
-
+            bookStatusBadge.classList.remove('bg-success');
+            bookStatusBadge.classList.add('bg-danger');
+            bookStatusBadge.innerHTML = 'Not Available';
+    
         } catch (error) {
             console.error('Error borrowing book:', error);
-            if (error.message === 'API request failed') {
-                alert('Ohh somthing went wrong..');
-            }
+            alert('Ohh, something went wrong...');
+            // Revert the button in case of error
+            borrowButton.disabled = false;
+            borrowButton.classList.remove('btn-secondary');
+            borrowButton.classList.add('btn-primary');
+            borrowButton.innerHTML = '<i class="fas fa-hand-holding"></i> Borrow';
         }
     };
+    
 
     const handleReturn = async (e) => {
         const bookId = e.target.getAttribute('data-id');

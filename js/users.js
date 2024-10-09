@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const BACKEND_API = 'https://library-management-system-infm.onrender.com';
-    // const BACKEND_API = 'http://localhost:5000';
+    // const BACKEND_API = 'https://library-management-system-infm.onrender.com';
+    const BACKEND_API = 'http://localhost:5000';
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
 
@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             MEMBER: [
                 { text: 'Books', link: 'books.html', icon: 'fas fa-book' },
                 { text: 'My Borrows', link: 'my-borrows.html', icon: 'fas fa-bookmark' },
+                { text: 'History of Books', link: 'book-history.html', icon: 'fas fa-history' }
             ]
         };
 
