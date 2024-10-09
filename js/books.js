@@ -1,7 +1,25 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const BACKEND_API = 'https://library-management-system-infm.onrender.com';
+    // const BACKEND_API = 'https://library-management-system-infm.onrender.com';
+    const BACKEND_API = 'http://localhost:5000';
     const role = localStorage.getItem('role');
     const token = localStorage.getItem('token');
+    
+    const redirectToLogin = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        window.location.href = 'index.html';
+    };
+
+    if(!token || !role){
+        redirectToLogin()
+    }
+
+    const handleApiResponse = (response) => {
+        if (response.status === 401 || response.status === 403 ||  response.status === 400) {
+            redirectToLogin();
+            throw new Error('Invalid token');
+        }
+    };
 
     const renderSidebar = () => {
         const sidebarItems = {
@@ -46,13 +64,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Content-Type': 'application/json'
                 }
             });
+            
+            
+            handleApiResponse(response);
 
             if (!response.ok) {
-                throw new Error('Failed to fetch books');
+                const errorData = await response.json(); 
+                alert(`Error: ${errorData.error}`);
+                return 
             }
+            let books =  await response.json();
 
-            let books = await response.json();
-            books = books.data;
+            books = books.data
+
 
             bookContent.innerHTML = `
                 <h4>Available Books</h4>
@@ -118,8 +142,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('saveNewBook').addEventListener('click', handleAddBook);
             }
         } catch (error) {
-            bookContent.innerHTML = '<p class="alert alert-danger">Failed to load books. Please try again later.</p>';
             console.error('Error:', error);
+            if (error.message === 'API request failed') {
+                bookContent.innerHTML = '<p class="alert alert-danger">Failed to load books. Please try again later.</p>';
+            }
         }
     };
 
@@ -134,15 +160,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            if (borrowResponse.ok) {
-                e.target.style.display = 'none';
-                const returnButton = e.target.nextElementSibling;
-                returnButton.style.display = 'inline-block';
-                const borrowedStatus = e.target.parentElement.querySelector('.borrowed-status');
-                borrowedStatus.style.display = 'block';
+            handleApiResponse(borrowResponse);
+            if (!returnResponse.ok) {
+                const errorData = await borrowResponse.json(); 
+                alert(`Error: ${errorData.error}`);
+                return 
             }
+
+            e.target.style.display = 'none';
+            const returnButton = e.target.nextElementSibling;
+            returnButton.style.display = 'inline-block';
+            const borrowedStatus = e.target.parentElement.querySelector('.borrowed-status');
+            borrowedStatus.style.display = 'block';
+
         } catch (error) {
             console.error('Error borrowing book:', error);
+            if (error.message === 'API request failed') {
+                alert('Ohh somthing went wrong..');
+            }
         }
     };
 
@@ -157,15 +192,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            if (returnResponse.ok) {
-                e.target.style.display = 'none';
-                const borrowButton = e.target.previousElementSibling;
-                borrowButton.style.display = 'inline-block';
-                const borrowedStatus = e.target.parentElement.querySelector('.borrowed-status');
-                borrowedStatus.style.display = 'none';
+            handleApiResponse(returnResponse);
+            if (!returnResponse.ok) {
+                const errorData = await returnResponse.json(); 
+                alert(`Error: ${errorData.error}`);
+                return 
             }
+
+            e.target.style.display = 'none';
+            const borrowButton = e.target.previousElementSibling;
+            borrowButton.style.display = 'inline-block';
+            const borrowedStatus = e.target.parentElement.querySelector('.borrowed-status');
+            borrowedStatus.style.display = 'none';
+
         } catch (error) {
             console.error('Error returning book:', error);
+            if (error.message === 'API request failed') {
+                alert('Ohh somthing went wrong..');
+            }
         }
     };
 
@@ -180,10 +224,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         'Content-Type': 'application/json'
                     }
                 });
+                handleApiResponse(deleteResponse);
 
-                if (deleteResponse.ok) {
-                    e.target.closest('.col').remove();
+                if(!deleteResponse.ok) {
+                    const errorData = await deleteResponse.json(); 
+                    alert(`Error: ${errorData.error}`);
+                    return  
                 }
+                e.target.closest('.col').remove();
+
             } catch (error) {
                 console.error('Error deleting book:', error);
             }
@@ -200,6 +249,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Content-Type': 'application/json'
                 }
             });
+
+            handleApiResponse(response);
 
             if (response.ok) {
                 let book = await response.json();
@@ -226,15 +277,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                         })
                     });
 
+                    handleApiResponse(updateResponse);
+
                     if (updateResponse.ok) {
                         $('#editBookModal').modal('hide');
                         renderBookContent();
                     } else {
-                        alert("Failed to update the book. Please try again.");
+                        const errorData = await updateResponse.json(); 
+                        alert(`Error: ${errorData.error}`);
+                        return 
                     }
                 };
             } else {
-                alert("Failed to load book details.");
+                const errorData = await response.json(); 
+                alert(`Error: ${errorData.error}`);
+                return 
             }
         } catch (error) {
             console.error('Error editing book:', error);
@@ -258,15 +315,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 })
             });
 
+            handleApiResponse(createBookResponse);
+
             if (createBookResponse.ok) {
                 $('#addBookModal').modal('hide');
                 renderBookContent();
             } else {
-                alert("Failed to add the book. Please try again.");
+                const errorData = await createBookResponse.json(); 
+                alert(`Error: ${errorData.error}`);
+                return 
             }
         } catch (error) {
             console.error('Error adding book:', error);
-            alert("Failed to add the book. Please try again.");
         }
     };
 

@@ -1,15 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const BACKEND_API = 'https://library-management-system-infm.onrender.com'
+    // const BACKEND_API = 'https://library-management-system-infm.onrender.com';
+    const BACKEND_API = 'http://localhost:5000';
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
 
+    function showMessage(elementId, message, isError = false) {
+        const messageElement = document.getElementById(elementId);
+        messageElement.innerText = message;
+        messageElement.classList.remove('alert-success', 'alert-danger');
+        messageElement.classList.add(isError ? 'alert-danger' : 'alert-success');
+        messageElement.style.display = 'block';
+
+        setTimeout(() => {
+            messageElement.style.display = 'none';
+        }, 5000);
+    }
+
     if (loginForm) {
-        try {
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-    
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
                 const response = await fetch(`${BACKEND_API}/api/login`, {
                     method: 'POST',
                     headers: {
@@ -17,25 +30,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     body: JSON.stringify({ username, password }),
                 });
-    
+
                 const data = await response.json();
-                console.log(data)
-    
+
                 if (response.ok) {
-                    document.getElementById('loginMessage').innerText = 'Login successful!';
+                    showMessage('loginMessage', 'Login successful!');
                     localStorage.setItem('token', data.data.token);
                     localStorage.setItem('role', data.data.role);
-                    window.location.href = 'books.html';
+                    setTimeout(() => {
+                        window.location.href = 'books.html';
+                    }, 1000);
                 } else {
-                    document.getElementById('loginMessage').innerText = data.message;
+                    showMessage('loginMessage', data.message || 'Login failed', true);
                 }
-                document.getElementById('username').value = ""
-                document.getElementById('password').value = ""
-            })
-        } catch (error) {
-            console.log("error: " + error.message)
-        }
-    };
+            } catch (error) {
+                showMessage('loginMessage', 'An error occurred. Please try again later.', true);
+                console.error("Error:", error);
+            }
+
+            document.getElementById('username').value = "";
+            document.getElementById('password').value = "";
+        });
+    }
+
     if (signupForm) {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -43,21 +60,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('password').value;
             const role = document.getElementById('role').value;
 
-            const response = await fetch(`${BACKEND_API}/api/signup`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password, role }),
-            });
+            try {
+                const response = await fetch(`${BACKEND_API}/api/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password, role }),
+                });
 
-            const data = await response.json();
+                const data = await response.json();
 
-            if (response.ok) {
-                document.getElementById('signupMessage').innerText = 'Account created!';
-                window.location.href = 'index.html';
-            } else {
-                document.getElementById('signupMessage').innerText = data.message;
+                if (response.ok) {
+                    showMessage('signupMessage', 'Account created successfully!');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                } else {
+                    showMessage('signupMessage', data.message || 'Signup failed', true);
+                }
+            } catch (error) {
+                showMessage('signupMessage', 'An error occurred. Please try again later.', true);
+                console.error("Error:", error);
             }
         });
     }

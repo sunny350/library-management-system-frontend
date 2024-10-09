@@ -1,7 +1,25 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const BACKEND_API = 'https://library-management-system-infm.onrender.com';
+    // const BACKEND_API = 'https://library-management-system-infm.onrender.com';
+    const BACKEND_API = 'http://localhost:5000';
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
+
+    const redirectToLogin = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        window.location.href = 'index.html';
+    };
+
+    if(!token || !role){
+        redirectToLogin()
+    }
+
+    const handleApiResponse = (response) => {
+        if (response.status === 401 || response.status === 403 ||  response.status === 400) {
+            redirectToLogin();
+            throw new Error('Invalid token');
+        }
+    };
 
     if (role !== 'LIBRARIAN') {
         alert('You are not authorized to access this page.');
@@ -39,126 +57,144 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
     const renderUserContent = async () => {
-        const userContent = document.getElementById('userContent');
+        try {
+            const userContent = document.getElementById('userContent');
         
-        const response = await fetch(`${BACKEND_API}/api/users`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        let users = await response.json();
-        users = users.data;
-
-        if (response.ok) {
-            userContent.innerHTML = '<h4>Users</h4><div id="userList"></div>';
-            const userList = document.getElementById('userList');
-
-            users.forEach(user => {
-                const userItem = document.createElement('div');
-                userItem.classList.add('user-item', 'mb-3', 'p-3', 'border', 'rounded');
-                userItem.innerHTML = `
-                    <h5>${user.username}</h5>
-                    <p>Role: ${user.role}</p>
-                    <button class="btn btn-danger delete-btn" data-id="${user._id}">Delete</button>
-                    <button class="btn btn-info edit-btn" data-id="${user._id}">Edit</button>
-                `;
-                userList.appendChild(userItem);
+            const response = await fetch(`${BACKEND_API}/api/users`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
-
-            // Delete user
-            document.querySelectorAll('.delete-btn').forEach(button => {
-                button.addEventListener('click', async (e) => {
-                    if (confirm('Are you sure you want to delete this user?')) {
-                        try {
-                            const userId = e.target.getAttribute('data-id');
-                            const deleteResponse = await fetch(`${BACKEND_API}/api/users/${userId}`, {
-                                method: 'DELETE',
-                                headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            });
-        
-                            if (deleteResponse.ok) {
-                                e.target.parentElement.remove(); // Remove user from list
-                            }                          
-                        } catch (error) {
-                            alert('unable to delete user.')
-                            console.log(`unable to delete user ${error.message}`)
-                        }
-                    }
+            handleApiResponse(response)
+    
+            if (response.ok) {
+                let users = await response.json();
+                users = users.data;
+    
+                userContent.innerHTML = '<h4>Users</h4><div id="userList"></div>';
+                const userList = document.getElementById('userList');
+    
+                users.forEach(user => {
+                    const userItem = document.createElement('div');
+                    userItem.classList.add('user-item', 'mb-3', 'p-3', 'border', 'rounded');
+                    userItem.innerHTML = `
+                        <h5>${user.username}</h5>
+                        <p>Role: ${user.role}</p>
+                        <button class="btn btn-danger delete-btn" data-id="${user._id}">Delete</button>
+                        <button class="btn btn-info edit-btn" data-id="${user._id}">Edit</button>
+                    `;
+                    userList.appendChild(userItem);
                 });
-            });
-
-            // Edit user
-            document.querySelectorAll('.edit-btn').forEach(button => {
-                button.addEventListener('click', async (e) => {
-                    const userId = e.target.getAttribute('data-id');
-
-                    // Fetch user details
-                    const response = await fetch(`${BACKEND_API}/api/users/${userId}`, {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
+    
+                // Delete user
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        if (confirm('Are you sure you want to delete this user?')) {
+                            try {
+                                const userId = e.target.getAttribute('data-id');
+                                const deleteResponse = await fetch(`${BACKEND_API}/api/users/${userId}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+                                handleApiResponse(deleteResponse)
+            
+                                if (deleteResponse.ok) {
+                                    e.target.parentElement.remove(); // Remove user from list
+                                }else{
+                                    const errorData = await deleteResponse.json(); 
+                                    alert(`Error: ${errorData.error}`);
+                                }                          
+                            } catch (error) {
+                                alert('unable to delete user.')
+                                console.log(`unable to delete user ${error.message}`)
+                            }
                         }
                     });
-
-                    if (response.ok) {
-                        let user = await response.json();
-                        user = user.data;
-
-                        document.getElementById('editUserName').value = user.username;
-                        document.getElementById('editUserRole').value = user.role;
-                        document.getElementById('editUserCurrentPassword').value = ''; 
-                        document.getElementById('editUserNewPassword').value = ''; 
-
-                        // Show edit modal
-                        $('#editUserModal').modal('show');
-
-                        // Save changes
-                        document.getElementById('saveUserChanges').addEventListener('click', async () => {
-                            const updatedName = document.getElementById('editUserName').value;
-                            const updatedRole = document.getElementById('editUserRole').value;
-                            const currentPassword = document.getElementById('editUserCurrentPassword').value;
-                            const newPassword = document.getElementById('editUserNewPassword').value;
-
-                            const updatePayload = {
-                                username: updatedName,
-                                role: updatedRole
-                            };
-            
-                            // Include current and new passwords only if they are provided
-                            if (currentPassword && newPassword) {
-                                updatePayload.currentPassword = currentPassword;
-                                updatePayload.newPassword = newPassword;
-                            }
-
-                            const updateResponse = await fetch(`${BACKEND_API}/api/users/${userId}`, {
-                                method: 'PUT',
-                                headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(updatePayload)
-                            });
-
-                            if (updateResponse.ok) {
-                                $('#editUserModal').modal('hide');
-                                renderUserContent(); // Refresh user list
-                            } else {
-                                alert("Failed to update user.");
-                            }
-                        }, { once: true });
-                    }
                 });
-            });
-        } else {
-            userContent.innerHTML = `<p>Error fetching users: ${users.message}</p>`;
+    
+                // Edit user
+                document.querySelectorAll('.edit-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const userId = e.target.getAttribute('data-id');
+    
+                        // Fetch user details
+                        const response = await fetch(`${BACKEND_API}/api/users/${userId}`, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        handleApiResponse(response)
+    
+                        if (response.ok) {
+                            let user = await response.json();
+                            user = user.data;
+    
+                            document.getElementById('editUserName').value = user.username;
+                            document.getElementById('editUserRole').value = user.role;
+                            document.getElementById('editUserCurrentPassword').value = ''; 
+                            document.getElementById('editUserNewPassword').value = ''; 
+    
+                            // Show edit modal
+                            $('#editUserModal').modal('show');
+    
+                            // Save changes
+                            document.getElementById('saveUserChanges').addEventListener('click', async () => {
+                                const updatedName = document.getElementById('editUserName').value;
+                                const updatedRole = document.getElementById('editUserRole').value;
+                                const currentPassword = document.getElementById('editUserCurrentPassword').value;
+                                const newPassword = document.getElementById('editUserNewPassword').value;
+    
+                                const updatePayload = {
+                                    username: updatedName,
+                                    role: updatedRole
+                                };
+                
+                                // Include current and new passwords only if they are provided
+                                if (currentPassword && newPassword) {
+                                    updatePayload.currentPassword = currentPassword;
+                                    updatePayload.newPassword = newPassword;
+                                }
+    
+                                const updateResponse = await fetch(`${BACKEND_API}/api/users/${userId}`, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(updatePayload)
+                                });
+                                handleApiResponse(updateResponse)
+    
+                                if (updateResponse.ok) {
+                                    $('#editUserModal').modal('hide');
+                                    renderUserContent(); // Refresh user list
+                                } else {
+                                    const errorData = await updateResponse.json(); 
+                                    alert(`Error: ${errorData.error}`);
+                                }
+                            }, { once: true });
+                        }else {
+                            const errorData = await response.json(); 
+                            alert(`Error: ${errorData.error}`);
+                        }
+                    });
+                });
+            } else {
+                const errorData = await response.json(); 
+                alert(`Error: ${errorData.error}`);
+            }
+        } catch (error) {
+            console.log(`Error: ${error.message}`)
+            alert(`Error: ${error.message}`);
         }
+
     };
 
     renderSidebar();
@@ -187,12 +223,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 password: newUserPassword
             })
         });
+        handleApiResponse(response)
+        
 
         if (response.ok) {
             $('#addUserModal').modal('hide');
             renderUserContent(); // Refresh user list
         } else {
-            alert("Failed to add user.");
+            const errorData = await response.json(); 
+            alert(`Error: ${errorData.error}`);
         }
     });
 });
