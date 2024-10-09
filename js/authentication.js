@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const BACKEND_API = 'https://755e-27-96-89-255.ngrok-free.app'
+    const BACKEND_API = 'https://library-management-system-infm.onrender.com'
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
 
