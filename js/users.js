@@ -142,10 +142,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             document.getElementById('editUserCurrentPassword').value = ''; 
                             document.getElementById('editUserNewPassword').value = ''; 
     
-                            // Show edit modal
                             $('#editUserModal').modal('show');
     
-                            // Save changes
                             document.getElementById('saveUserChanges').addEventListener('click', async () => {
                                 const updatedName = document.getElementById('editUserName').value;
                                 const updatedRole = document.getElementById('editUserRole').value;
@@ -157,7 +155,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     role: updatedRole
                                 };
                 
-                                // Include current and new passwords only if they are provided
                                 if (currentPassword && newPassword) {
                                     updatePayload.currentPassword = currentPassword;
                                     updatePayload.newPassword = newPassword;
@@ -175,7 +172,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
                                 if (updateResponse.ok) {
                                     $('#editUserModal').modal('hide');
-                                    renderUserContent(); // Refresh user list
                                 } else {
                                     const errorData = await updateResponse.json(); 
                                     alert(`Error: ${errorData.error}`);
@@ -229,6 +225,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (response.ok) {
             $('#addUserModal').modal('hide');
+            document.getElementById('newUserName').value = "";
+            document.getElementById('newUserRole').value = "";
+            document.getElementById('newUserPassword').value = "";
             renderUserContent(); // Refresh user list
         } else {
             const errorData = await response.json(); 

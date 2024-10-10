@@ -331,6 +331,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (createBookResponse.ok) {
                 $('#addBookModal').modal('hide');
+                document.getElementById('newBookTitle').value = ""
+                document.getElementById('newBookAuthor').value = ""
                 renderBookContent();
             } else {
                 const errorData = await createBookResponse.json(); 
